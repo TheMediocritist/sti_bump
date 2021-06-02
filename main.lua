@@ -25,7 +25,7 @@ local player = {}
 local world = bump.newWorld(20)
 
 function love.load()
-    -- load tilemap with STI
+    -- load tilemap with STI; edit the map using the Tiled app. Any tile with property 'collidable' = true will be solid.
     map = sti('assets/maps/demo2.lua', {'bump'})
     -- create a bump world
     map:bump_init(world)
