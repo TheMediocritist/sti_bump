@@ -112,7 +112,7 @@ function playerUpdate(dt)
         player.currentState = player.states['jumping']
     end
     
-    -- player.dx and dy are the new player coordinates, subject to the collision check below
+    -- player.dx and dy are the offsets between old and new player coordinates, fed into the collision check below
     player.dx = player.xvel * dt
     player.dy = player.yvel * dt
     
