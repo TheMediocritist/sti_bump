@@ -8,11 +8,11 @@ function utils.format_path(path)
 	local k
 
 	repeat -- /./ -> /
-		path,k = path:gsub(np_pat2,'/')
+		path,k = path:gsub(np_pat2,'/',1)
 	until k == 0
 
 	repeat -- A/../ -> (empty)
-		path,k = path:gsub(np_pat1,'')
+		path,k = path:gsub(np_pat1,'',1)
 	until k == 0
 
 	if path == '' then path = '.' end
@@ -22,8 +22,6 @@ end
 
 -- Compensation for scale/rotation shift
 function utils.compensate(tile, tileX, tileY, tileW, tileH)
-	local origx = tileX
-	local origy = tileY
 	local compx = 0
 	local compy = 0
 
@@ -141,7 +139,7 @@ function utils.convert_ellipse_to_polygon(x, y, w, h, max_segments)
 	return vertices
 end
 
-function utils.rotate_vertex(map, vertex, x, y, cos, sin)
+function utils.rotate_vertex(map, vertex, x, y, cos, sin, oy)
 	if map.orientation == "isometric" then
 		x, y               = utils.convert_isometric_to_screen(map, x, y)
 		vertex.x, vertex.y = utils.convert_isometric_to_screen(map, vertex.x, vertex.y)
@@ -152,17 +150,17 @@ function utils.rotate_vertex(map, vertex, x, y, cos, sin)
 
 	return
 		x + cos * vertex.x - sin * vertex.y,
-		y + sin * vertex.x + cos * vertex.y
+		y + sin * vertex.x + cos * vertex.y - (oy or 0)
 end
 
 --- Project isometric position to cartesian position
 function utils.convert_isometric_to_screen(map, x, y)
-	local mapH    = map.height
+	local mapW    = map.width
 	local tileW   = map.tilewidth
 	local tileH   = map.tileheight
 	local tileX   = x / tileH
 	local tileY   = y / tileH
-	local offsetX = mapH * tileW / 2
+	local offsetX = mapW * tileW / 2
 
 	return
 		(tileX - tileY) * tileW / 2 + offsetX,
@@ -175,9 +173,9 @@ function utils.hex_to_color(hex)
 	end
 
 	return {
-		r = tonumber(hex:sub(1, 2), 16),
-		g = tonumber(hex:sub(3, 4), 16),
-		b = tonumber(hex:sub(5, 6), 16)
+		r = tonumber(hex:sub(1, 2), 16) / 255,
+		g = tonumber(hex:sub(3, 4), 16) / 255,
+		b = tonumber(hex:sub(5, 6), 16) / 255
 	}
 end
 
@@ -194,15 +192,26 @@ function utils.pixel_function(_, _, r, g, b, a)
 end
 
 function utils.fix_transparent_color(tileset, path)
-	tileset.image = love.graphics.newImage(path)
+	local image_data = love.image.newImageData(path)
+	tileset.image = love.graphics.newImage(image_data)
 
 	if tileset.transparentcolor then
 		utils._TC = utils.hex_to_color(tileset.transparentcolor)
 
-		local image_data = tileset.image:getData()
 		image_data:mapPixel(utils.pixel_function)
 		tileset.image = love.graphics.newImage(image_data)
 	end
+end
+
+function utils.deepCopy(t)
+	local copy = {}
+	for k,v in pairs(t) do
+		if type(v) == "table" then
+			v = utils.deepCopy(v)
+		end
+		copy[k] = v
+	end
+	return copy
 end
 
 return utils
